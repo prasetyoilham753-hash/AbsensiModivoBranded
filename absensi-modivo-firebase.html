@@ -197,9 +197,10 @@
     box-shadow:0 14px 35px rgba(0,0,0,.7);
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
-    position:relative;overflow:hidden;
+    position:relative;
+    overflow:visible;
   }
-  .card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--gold-grad);}
+  .card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--gold-grad);border-top-left-radius:10px;border-top-right-radius:10px;}
   .card::after{
     content:'';position:absolute;top:18px;right:18px;width:36px;height:36px;
     background-image:radial-gradient(var(--gold-dim) 1.5px, transparent 1.5px);
@@ -210,7 +211,12 @@
     text-transform:uppercase;padding-bottom:14px;border-bottom:1px solid var(--line);
   }
 
-  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:end;}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:end;position:relative;z-index:1;}
+  .row:has(.custom-select-container.open),
+  div:has(.custom-select-container.open),
+  td:has(.custom-select-container.open){
+    z-index:9999 !important;
+  }
   label{display:block;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:6px;font-weight:500;}
   select,input{
     width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:5px;font-size:14px;min-width:160px;
@@ -228,6 +234,10 @@
     width: 100%;
     min-width: 150px;
     display: inline-block;
+    z-index: 1;
+  }
+  .custom-select-container.open {
+    z-index: 99999 !important;
   }
   select.custom-select-hidden {
     position: absolute !important;
@@ -277,14 +287,14 @@
     top: calc(100% + 6px);
     left: 0;
     right: 0;
-    z-index: 999;
-    background: rgba(20, 18, 15, 0.96);
+    z-index: 999999 !important;
+    background: #14120f;
     border: 1px solid var(--card-border);
     border-radius: 8px;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(205, 167, 93, 0.15);
-    max-height: 220px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95), 0 0 20px rgba(205, 167, 93, 0.25);
+    max-height: 240px;
     overflow-y: auto;
     padding: 6px;
     display: none;
