@@ -2052,12 +2052,20 @@ function renderLogTable(log){
 
   logBody.querySelectorAll('.edit-del').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
-      const confirmed = await showCustomConfirm('Hapus data absen ini?', 'Hapus Absen');
-      if(!confirmed) return;
       const tr = e.target.closest('tr');
       const id = tr.dataset.id;
-      let log2 = await getLog();
-      log2 = log2.filter(r=>String(r.id)!==id);
+      const log = await getLog();
+      const targetRec = log.find(r => String(r.id) === id);
+
+      if (targetRec && isAdminName(targetRec.name)) {
+        await showCustomAlert('Data absensi Bintang (Super Admin) dilindungi dan tidak dapat dihapus.', 'Akses Ditolak');
+        return;
+      }
+
+      const confirmed = await showCustomConfirm('Hapus data absen ini?', 'Hapus Absen');
+      if (!confirmed) return;
+
+      let log2 = log.filter(r => String(r.id) !== id);
       await saveLog(log2);
       renderAdmin();
       renderPublicRekap();
@@ -2142,17 +2150,22 @@ document.getElementById('btnExport').addEventListener('click', async ()=>{
   XLSX.writeFile(wb, `absensi-modivo-${todayStr()}.xlsx`);
 });
 
-// ---------- RESET SEMUA DATA ----------
+// ---------- RESET SEMUA DATA (MENGECUALIKAN BINTANG) ----------
 document.getElementById('btnReset').addEventListener('click', async ()=>{
-  const code = await showCustomPrompt('Masukkan kode keamanan untuk menghapus SEMUA data absensi:', 'Kode Keamanan', 'Hapus Semua Data');
+  const code = await showCustomPrompt('Masukkan kode keamanan untuk menghapus data absensi:', 'Kode Keamanan', 'Hapus Data Absensi');
   if(code === null) return;
   if(code.trim() !== RESET_CODE){
     await showCustomAlert('Kode salah. Data tidak dihapus.', 'Akses Ditolak');
     return;
   }
-  const confirmed = await showCustomConfirm('Yakin ingin menghapus seluruh data absensi? Tindakan ini tidak bisa dibatalkan.', 'Konfirmasi Hapus Total');
+  const confirmed = await showCustomConfirm('Yakin ingin menghapus data absensi staff? Data absensi Bintang akan tetap tersimpan dan dilindungi.', 'Konfirmasi Hapus Data Staff');
   if(!confirmed) return;
-  await saveLog([]);
+
+  const currentLog = await getLog();
+  const protectedLog = currentLog.filter(r => isAdminName(r.name));
+  await saveLog(protectedLog);
+
+  await showCustomAlert('Data absensi staff berhasil dibersihkan. Data absensi Bintang tetap aman dan tersimpan.', 'Data Bintang Terlindungi');
   renderAdmin();
   renderPublicRekap();
 });
