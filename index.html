@@ -222,6 +222,119 @@
     background:rgba(16,15,12,0.9);color:var(--gold-light);min-width:200px;letter-spacing:.5px;
   }
 
+  /* ---------- CUSTOM LUXURY WEB SELECT MENU ---------- */
+  .custom-select-container {
+    position: relative;
+    width: 100%;
+    min-width: 150px;
+    display: inline-block;
+  }
+  select.custom-select-hidden {
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+  .custom-select-trigger {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Jost', sans-serif;
+    background: rgba(26, 24, 21, 0.95);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0.3px;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .custom-select-trigger:hover, .custom-select-container.open .custom-select-trigger {
+    border-color: var(--gold);
+    background: rgba(32, 29, 24, 0.98);
+    box-shadow: 0 0 10px rgba(205, 167, 93, 0.25);
+  }
+  .custom-select-container.open .custom-select-trigger .custom-select-arrow {
+    transform: rotate(180deg);
+    stroke: var(--gold);
+  }
+  .custom-select-arrow {
+    stroke: var(--gold-dim);
+    transition: transform 0.25s ease, stroke 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+  .custom-select-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 999;
+    background: rgba(20, 18, 15, 0.96);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(205, 167, 93, 0.15);
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 6px;
+    display: none;
+    animation: fadeInSelect 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes fadeInSelect {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .custom-select-container.open .custom-select-dropdown {
+    display: block;
+  }
+  .custom-select-option {
+    padding: 9px 12px;
+    border-radius: 5px;
+    font-size: 13.5px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .custom-select-option:hover {
+    background: rgba(205, 167, 93, 0.15);
+    color: var(--gold-light);
+  }
+  .custom-select-option.selected {
+    background: linear-gradient(135deg, rgba(205,167,93,0.25) 0%, rgba(138,111,58,0.2) 100%);
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+  .custom-select-option.selected::after {
+    content: '✓';
+    font-size: 12px;
+    color: var(--gold);
+    margin-left: 8px;
+  }
+  .custom-select-dropdown::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-select-dropdown::-webkit-scrollbar-track {
+    background: rgba(10, 9, 7, 0.5);
+    border-radius: 4px;
+  }
+  .custom-select-dropdown::-webkit-scrollbar-thumb {
+    background: var(--gold-dim);
+    border-radius: 4px;
+  }
+
   button{
     cursor:pointer;border:none;border-radius:5px;padding:10px 20px;font-size:12.5px;font-weight:600;
     letter-spacing:1px;text-transform:uppercase;font-family:'Jost',sans-serif;transition:all .15s ease;
@@ -1381,6 +1494,96 @@ function nameCellHtml(n){
   return isAdminName(n) ? `<span class="name-admin">${n}</span>` : n;
 }
 
+// ---------- UNIVERSAL CUSTOM WEB SELECT CONTROL ----------
+function closeAllCustomSelects() {
+  document.querySelectorAll('.custom-select-container.open').forEach(c => c.classList.remove('open'));
+}
+
+function syncCustomSelect(selectEl) {
+  if (!selectEl || selectEl.tagName !== 'SELECT') return;
+
+  let container = selectEl.parentElement;
+  if (!container || !container.classList.contains('custom-select-container')) {
+    container = document.createElement('div');
+    container.className = 'custom-select-container';
+    selectEl.parentNode.insertBefore(container, selectEl);
+    container.appendChild(selectEl);
+    selectEl.classList.add('custom-select-hidden');
+  }
+
+  let trigger = container.querySelector('.custom-select-trigger');
+  let dropdown = container.querySelector('.custom-select-dropdown');
+
+  if (!trigger) {
+    trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'custom-select-trigger';
+    trigger.innerHTML = `
+      <span class="custom-select-label"></span>
+      <svg class="custom-select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>`;
+    container.appendChild(trigger);
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = container.classList.contains('open');
+      closeAllCustomSelects();
+      if (!isOpen && !selectEl.disabled) {
+        container.classList.add('open');
+      }
+    });
+  }
+
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.className = 'custom-select-dropdown';
+    container.appendChild(dropdown);
+  }
+
+  dropdown.innerHTML = '';
+  const selectedIdx = selectEl.selectedIndex >= 0 ? selectEl.selectedIndex : 0;
+  const selectedOpt = selectEl.options[selectedIdx];
+  const labelSpan = trigger.querySelector('.custom-select-label');
+  labelSpan.textContent = selectedOpt ? selectedOpt.text : '';
+
+  if (selectEl.disabled) {
+    trigger.setAttribute('disabled', 'true');
+    trigger.style.opacity = '0.5';
+    trigger.style.cursor = 'not-allowed';
+  } else {
+    trigger.removeAttribute('disabled');
+    trigger.style.opacity = '1';
+    trigger.style.cursor = 'pointer';
+  }
+
+  Array.from(selectEl.options).forEach((opt, idx) => {
+    const optDiv = document.createElement('div');
+    optDiv.className = 'custom-select-option' + (idx === selectedIdx ? ' selected' : '');
+    optDiv.dataset.value = opt.value;
+    optDiv.textContent = opt.text;
+
+    optDiv.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectEl.value = opt.value;
+      selectEl.selectedIndex = idx;
+      labelSpan.textContent = opt.text;
+      container.classList.remove('open');
+
+      selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCustomSelect(selectEl);
+    });
+
+    dropdown.appendChild(optDiv);
+  });
+}
+
+function syncAllCustomSelects() {
+  document.querySelectorAll('select').forEach(sel => syncCustomSelect(sel));
+}
+
+document.addEventListener('click', closeAllCustomSelects);
+
 // ---------- SETUP & UPDATE DROPDOWNS ----------
 const hostSelect = document.getElementById('hostSelect');
 const hostRekapSelect = document.getElementById('hostRekapSelect');
@@ -1415,6 +1618,8 @@ function updateAllDropdowns(){
     manualName.innerHTML += optionHtml(n, n === curManual);
     rangeName.innerHTML += optionHtml(n, n === curRange);
   });
+
+  syncAllCustomSelects();
 }
 
 function tickClock(){
@@ -1839,6 +2044,7 @@ function renderLogTable(log){
       renderPublicRekap();
     });
   });
+  syncAllCustomSelects();
 }
 
 async function renderAdmin(){
