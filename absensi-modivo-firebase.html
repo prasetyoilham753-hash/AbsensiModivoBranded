@@ -1493,15 +1493,34 @@ function calendarHtml(dates, recMap){
   </div>`;
 }
 
-// ---------- HELPER: TAMPILAN NAMA ADMIN KONSISTEN ----------
-function isAdminName(n){ return n === 'Bintang' || (n && n.toLowerCase().includes('bintang')); }
-function optionLabel(n){ return n; }
+// ---------- HELPER: SINKRONISASI & PEMBERSIHAN NAMA ----------
+function cleanName(n){
+  if (!n) return '';
+  return String(n)
+    .replace(/<[^>]*>/g, '')
+    .replace(/\(admin\)/gi, '')
+    .trim();
+}
+
+function isAdminName(n){
+  if (!n) return false;
+  const str = cleanName(n).toLowerCase();
+  return str === 'bintang' || str.includes('bintang') || str.includes('admin');
+}
+
+function sameName(n1, n2){
+  return cleanName(n1).toLowerCase() === cleanName(n2).toLowerCase();
+}
+
+function optionLabel(n){ return cleanName(n); }
 function optionHtml(n, selected){
-  const sel = selected ? ' selected' : '';
-  return `<option value="${n}"${sel}>${optionLabel(n)}</option>`;
+  const cleanN = cleanName(n);
+  const isSel = selected === true || sameName(cleanN, selected);
+  return `<option value="${cleanN}"${isSel ? ' selected' : ''}>${optionLabel(cleanN)}</option>`;
 }
 function nameCellHtml(n){
-  return isAdminName(n) ? `<span class="name-admin">${n}</span>` : n;
+  const cleanN = cleanName(n);
+  return isAdminName(cleanN) ? `<span class="name-admin">${cleanN}</span>` : cleanN;
 }
 
 // ---------- UNIVERSAL CUSTOM WEB SELECT CONTROL ----------
@@ -1683,14 +1702,14 @@ onSnapshot(SETTINGS_DOC, (snap)=>{
 
 // ---------- ABSEN MASUK ----------
 document.getElementById('btnMasuk').addEventListener('click', async ()=>{
-  const name = hostSelect.value;
+  const name = cleanName(hostSelect.value);
   const shift = document.getElementById('shiftSelect').value;
   const now = new Date();
   const date = todayStr(now);
   const jamAbsen = nowTimeStr();
 
   const log = await getLog();
-  const existing = log.find(r=>r.name===name && r.date===date);
+  const existing = log.find(r=>sameName(r.name, name) && r.date===date);
   if(existing){
     showStatus('statusBox', `${name} sudah tercatat hadir hari ini (${date}, pukul ${existing.jamAbsen}).`, false);
     return;
@@ -1706,7 +1725,7 @@ document.getElementById('btnMasuk').addEventListener('click', async ()=>{
 
 // ---------- MENU EDIT ABSENSI: TAMBAH MANUAL ----------
 document.getElementById('btnManualAdd').addEventListener('click', async ()=>{
-  const name = manualName.value;
+  const name = cleanName(manualName.value);
   const date = document.getElementById('manualDate').value;
   const shift = document.getElementById('manualShift').value;
   const jamAbsen = document.getElementById('manualTime').value.trim() || '-';
@@ -1714,7 +1733,7 @@ document.getElementById('btnManualAdd').addEventListener('click', async ()=>{
   if(!date){ showStatus('manualStatus','Pilih tanggal dulu.', false); return; }
 
   const log = await getLog();
-  const existing = log.find(r=>r.name===name && r.date===date);
+  const existing = log.find(r=>sameName(r.name, name) && r.date===date);
   if(existing){
     showStatus('manualStatus', `${name} sudah punya data pada ${date}. Edit langsung di tabel di bawah kalau mau ubah.`, false);
     return;
@@ -1729,12 +1748,12 @@ document.getElementById('btnManualAdd').addEventListener('click', async ()=>{
 // ---------- REKAP PUBLIK UNTUK HOST ----------
 async function renderPublicRekap(){
   const log = await getLog();
-  const name = hostRekapSelect.value;
+  const name = cleanName(hostRekapSelect.value);
   const dates = datesForMonth(hostMonthPicker.value);
 
   let totalHadir = 0;
   const cells = dates.map(d=>{
-    const rec = log.find(r=>r.name===name && r.date===d);
+    const rec = log.find(r=>sameName(r.name, name) && r.date===d);
     if(rec){
       totalHadir++;
       const pill = rec.shift ? `<span class="shift-pill ${rec.shift}">${rec.shift}</span>` : '';
@@ -1837,7 +1856,7 @@ function renderHostManageTable(log){
   if(!tbody) return;
 
   const rows = HOSTS.map((h, idx) => {
-    const totalLog = log.filter(r => r.name === h).length;
+    const totalLog = log.filter(r => sameName(r.name, h)).length;
     return `<tr>
       <td>${idx + 1}</td>
       <td style="text-align:left;font-weight:600;color:var(--silver);">${h}</td>
@@ -1933,13 +1952,13 @@ function renderMonthTable(log){
   const bodyRows = NAMES.map(n=>{
     let rowHadir = 0;
     const cells = dates.map(d=>{
-      const rec = log.find(r=>r.name===n && r.date===d);
+      const rec = log.find(r=>sameName(r.name, n) && r.date===d);
       if(rec){
         rowHadir++;
         const pill = rec.shift ? `<span class="shift-pill ${rec.shift}">${rec.shift}</span>` : '';
-        return `<td class="hadir att-cell" data-name="${n}" data-date="${d}" data-shift="${rec.shift||''}" title="Klik untuk ubah status">Hadir ${pill}</td>`;
+        return `<td class="hadir att-cell" data-name="${cleanName(n)}" data-date="${d}" data-shift="${rec.shift||''}" title="Klik untuk ubah status">Hadir ${pill}</td>`;
       }
-      return `<td class="isOff att-cell" data-name="${n}" data-date="${d}" data-shift="" title="Klik untuk ubah status">OFF</td>`;
+      return `<td class="isOff att-cell" data-name="${cleanName(n)}" data-date="${d}" data-shift="" title="Klik untuk ubah status">OFF</td>`;
     }).join('');
     totalHadirAll += rowHadir;
     const cls = isAdminName(n) ? ' class="name name-admin"' : ' class="name"';
@@ -1960,8 +1979,8 @@ function renderMonthTable(log){
 let editingCell = null;
 
 function openCellEditModal(name, date){
-  editingCell = { name, date };
-  document.getElementById('cellEditTitle').textContent = name;
+  editingCell = { name: cleanName(name), date };
+  document.getElementById('cellEditTitle').textContent = cleanName(name);
   document.getElementById('cellEditSub').textContent = `Tanggal ${date} — pilih status baru untuk hari ini`;
   document.getElementById('cellEditModal').classList.remove('hidden');
 }
@@ -1988,9 +2007,9 @@ document.querySelectorAll('.modal-opt').forEach(btn=>{
     const val = btn.dataset.val;
 
     let log = await getLog();
-    log = log.filter(r => !(r.name===name && r.date===date));
+    log = log.filter(r => !(sameName(r.name, name) && r.date===date));
     if(val){
-      log.push({ id: Date.now()+Math.random(), name, date, shift: val, jamAbsen: 'Diedit Admin' });
+      log.push({ id: Date.now()+Math.random(), name: cleanName(name), date, shift: val, jamAbsen: 'Diedit Admin' });
     }
     await saveLog(log);
     closeCellEditModal();
@@ -2002,14 +2021,14 @@ document.querySelectorAll('.modal-opt').forEach(btn=>{
 // ---------- LOG DETAIL (EDITABLE) ----------
 function renderLogTable(log){
   const filter = filterHost.value;
-  const filtered = filter ? log.filter(r=>r.name===filter) : log;
-  const sorted = [...filtered].sort((a,b)=> a.date===b.date ? a.name.localeCompare(b.name) : (a.date < b.date ? 1 : -1));
+  const filtered = filter ? log.filter(r=>sameName(r.name, filter)) : log;
+  const sorted = [...filtered].sort((a,b)=> a.date===b.date ? cleanName(a.name).localeCompare(cleanName(b.name)) : (a.date < b.date ? 1 : -1));
 
   const logBody = document.getElementById('logBody');
   document.getElementById('emptyMsg').style.display = sorted.length ? 'none' : 'block';
 
   logBody.innerHTML = sorted.map(r=>{
-    const nameOptions = NAMES.map(n=>optionHtml(n, n===r.name)).join('');
+    const nameOptions = NAMES.map(n=>optionHtml(n, sameName(n, r.name))).join('');
     const shiftLabels = {
       '': '-',
       'A': 'A - Subuh / 02:00 - 06:00',
@@ -2103,7 +2122,7 @@ document.getElementById('btnHitungRange').addEventListener('click', async ()=>{
       '<p class="note" style="margin-top:0;">Tampilan kalender hanya tersedia saat memilih satu nama, bukan "Semua Host".</p>';
 
     const rows = NAMES.map(n=>{
-      const total = log.filter(r=>r.name===n && dates.includes(r.date)).length;
+      const total = log.filter(r=>sameName(r.name, n) && dates.includes(r.date)).length;
       const cls = isAdminName(n) ? ' class="name name-admin"' : ' class="name"';
       return `<tr><td${cls}>${nameCellHtml(n)}</td><td>${total}</td><td>${dates.length-total}</td></tr>`;
     }).join('');
@@ -2114,7 +2133,7 @@ document.getElementById('btnHitungRange').addEventListener('click', async ()=>{
   } else {
     document.getElementById('rangeAllTableWrap').classList.add('hidden');
 
-    const recs = log.filter(r=>r.name===name && dates.includes(r.date));
+    const recs = log.filter(r=>sameName(r.name, name) && dates.includes(r.date));
     const totalHadir = recs.length;
     const totalHari = dates.length;
     const totalOff = totalHari - totalHadir;
