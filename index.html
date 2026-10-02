@@ -489,10 +489,10 @@
           <label>Shift</label>
           <select id="shiftSelect">
             <option value="">-</option>
-            <option value="A">A · Subuh</option>
-            <option value="B">B · Pagi</option>
-            <option value="C">C · Siang</option>
-            <option value="D">D · Malam</option>
+            <option value="A">A - Subuh / 02:00 - 06:00</option>
+            <option value="B">B - Pagi / 07:00 - 14:00</option>
+            <option value="C">C - Siang / 14:00 - 21:00</option>
+            <option value="D">D - Malam / 22:00 - 02:00</option>
           </select>
         </div>
         <div>
@@ -681,10 +681,10 @@
             <label>Shift</label>
             <select id="manualShift">
               <option value="">-</option>
-              <option value="A">A · Subuh</option>
-              <option value="B">B · Pagi</option>
-              <option value="C">C · Siang</option>
-              <option value="D">D · Malam</option>
+              <option value="A">A - Subuh / 02:00 - 06:00</option>
+              <option value="B">B - Pagi / 07:00 - 14:00</option>
+              <option value="C">C - Siang / 14:00 - 21:00</option>
+              <option value="D">D - Malam / 22:00 - 02:00</option>
             </select>
           </div>
           <div style="flex:1;">
@@ -2010,7 +2010,14 @@ function renderLogTable(log){
 
   logBody.innerHTML = sorted.map(r=>{
     const nameOptions = NAMES.map(n=>optionHtml(n, n===r.name)).join('');
-    const shiftOptions = ['','A','B','C','D'].map(s=>`<option value="${s}" ${s===(r.shift||'')?'selected':''}>${s||'-'}</option>`).join('');
+    const shiftLabels = {
+      '': '-',
+      'A': 'A - Subuh / 02:00 - 06:00',
+      'B': 'B - Pagi / 07:00 - 14:00',
+      'C': 'C - Siang / 14:00 - 21:00',
+      'D': 'D - Malam / 22:00 - 02:00'
+    };
+    const shiftOptions = ['','A','B','C','D'].map(s=>`<option value="${s}" ${s===(r.shift||'')?'selected':''}>${shiftLabels[s]}</option>`).join('');
     return `<tr data-id="${r.id}">
       <td><select class="edit-input edit-name">${nameOptions}</select></td>
       <td><input type="date" class="edit-input edit-date" value="${r.date}"></td>
