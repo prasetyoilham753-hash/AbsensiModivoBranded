@@ -476,7 +476,7 @@
           <div class="readonly-field" id="clockDisplay">—</div>
         </div>
         <div style="flex:1;">
-          <label>Shift (Opsional)</label>
+          <label>Shift</label>
           <select id="shiftSelect">
             <option value="">-</option>
             <option value="A">A · Subuh</option>
@@ -1252,10 +1252,10 @@ const db = getFirestore(app);
 const LOG_DOC = doc(db, 'absensi', 'log');
 const SETTINGS_DOC = doc(db, 'absensi', 'settings');
 
-const DEFAULT_HOSTS = ['Ali', 'Mala', 'Sisil', 'Amat'];
+const DEFAULT_HOSTS = ['Ali', 'Amat', 'Mala', 'Sisil'];
 const ADMIN_NAME = 'Bintang';
-let HOSTS = [...DEFAULT_HOSTS];
-let NAMES = [...HOSTS, ADMIN_NAME];
+let HOSTS = [...DEFAULT_HOSTS].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
+let NAMES = [...HOSTS, ADMIN_NAME].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
 
 const RESET_CODE = '753177';
 const DEFAULT_ADMIN_PASS = 'overbored7';
@@ -1605,6 +1605,8 @@ function updateAllDropdowns(){
   const curManual = manualName.value;
   const curRange = rangeName.value;
 
+  NAMES.sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
+
   hostSelect.innerHTML = '';
   hostRekapSelect.innerHTML = '';
   filterHost.innerHTML = '<option value="">Semua Nama</option>';
@@ -1639,8 +1641,8 @@ function showStatus(elId, msg, ok){
 // ---------- INITIALIZE HOSTS FROM FIREBASE & REAL-TIME LISTENERS ----------
 async function initHosts(){
   const savedHosts = await getHostsList();
-  HOSTS = savedHosts;
-  NAMES = [...HOSTS, ADMIN_NAME];
+  HOSTS = savedHosts.sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
+  NAMES = [...HOSTS, ADMIN_NAME].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
   updateAllDropdowns();
   renderPublicRekap();
 }
@@ -1657,11 +1659,11 @@ onSnapshot(LOG_DOC, ()=>{
 // Listener untuk settings (hosts dan konfigurasi)
 onSnapshot(SETTINGS_DOC, (snap)=>{
   if(snap.exists() && Array.isArray(snap.data().hosts) && snap.data().hosts.length > 0){
-    HOSTS = snap.data().hosts;
+    HOSTS = snap.data().hosts.sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
   } else {
-    HOSTS = [...DEFAULT_HOSTS];
+    HOSTS = [...DEFAULT_HOSTS].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
   }
-  NAMES = [...HOSTS, ADMIN_NAME];
+  NAMES = [...HOSTS, ADMIN_NAME].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
   updateAllDropdowns();
   renderPublicRekap();
   if(document.getElementById('adminDashboard') &&
@@ -1800,9 +1802,9 @@ document.getElementById('btnAddHostName').addEventListener('click', async ()=>{
     return;
   }
 
-  const updatedHosts = [...HOSTS, newName];
+  const updatedHosts = [...HOSTS, newName].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
   HOSTS = updatedHosts;
-  NAMES = [...HOSTS, ADMIN_NAME];
+  NAMES = [...HOSTS, ADMIN_NAME].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
   await saveHostsList(updatedHosts);
 
   input.value = '';
@@ -1861,9 +1863,9 @@ function renderHostManageTable(log){
         return;
       }
 
-      const updatedHosts = HOSTS.map(h => h === oldName ? trimmed : h);
+      const updatedHosts = HOSTS.map(h => h === oldName ? trimmed : h).sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
       HOSTS = updatedHosts;
-      NAMES = [...HOSTS, ADMIN_NAME];
+      NAMES = [...HOSTS, ADMIN_NAME].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
       await saveHostsList(updatedHosts);
 
       // Otomatis sinkronkan riwayat absen yang memakai nama lama
@@ -1899,9 +1901,9 @@ function renderHostManageTable(log){
       const confirmed = await showCustomConfirm(msg, 'Hapus Nama Staff');
       if(!confirmed) return;
 
-      const updatedHosts = HOSTS.filter(h => h !== targetName);
+      const updatedHosts = HOSTS.filter(h => h !== targetName).sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
       HOSTS = updatedHosts;
-      NAMES = [...HOSTS, ADMIN_NAME];
+      NAMES = [...HOSTS, ADMIN_NAME].sort((a,b)=>a.localeCompare(b, 'id', {sensitivity:'base'}));
       await saveHostsList(updatedHosts);
 
       showStatus('hostManageStatus', `Nama "${targetName}" telah dihapus dari daftar pilihan absen.`, true);
